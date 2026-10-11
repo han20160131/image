@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch Image AI - 免費批量生圖</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a21;
+      --border: #2a2a35;
+      --text: #e8e8ed;
+      --muted: #8b8b9a;
+      --accent: #7c5cfc;
+      --accent-hover: #9478ff;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #7c5cfc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p { color: var(--muted); font-size: 0.9rem; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .panel h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 12px;
+      font-size: 0.95rem;
+      resize: vertical;
+      font-family: inherit;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      width: 100%;
+      margin-top: 16px;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+    .progress-wrap {
+      margin-top: 16px;
+      display: none;
+    }
+    .progress-wrap.active { display: block; }
+    .progress-bar {
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .gallery-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      background: #111;
+    }
+    .card .meta {
+      padding: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .card .meta .prompt {
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .card .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .card .status {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .status.pending { background: #333; color: #aaa; }
+    .status.loading { background: var(--warning); color: #000; }
+    .status.done { background: var(--success); color: #000; }
+    .status.error { background: var(--danger); color: #fff; }
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .stats {
+      display: flex;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .stats span { color: var(--text); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Batch Image AI</h1>
+        <p>免費批量生成·基於 Pollinations</p>
+      </div>
+    </header>
+
+    <aside class="panel">
+      <h2>批量 Prompt</h2>
+      <textarea id="prompts" placeholder="每行輸入一個描述，例如：\nA cyberpunk city at night, neon lights\nA cute cat wearing sunglasses, studio lighting\nAncient temple in misty mountains, cinematic"></textarea>
+
+      <div class="form-row">
+        <div>
+          <label>寬度</label>
+          <select id="width">
+            <option value="512">512</option>
+            <option value="768" selected>768</option>
+            <option value="1024">1024</option>
+          </select>
+        </div>
+        <div>
+          <label>高度</label>
+          <select id="height">
+            <option value="512">512</option>
+            <option value="768" selected>768</option>
+            <option value="1024">1024</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>模型</label>
+          <select id="model">
+            <option value="flux" selected>Flux</option>
+            <option value="flux-realism">Flux Realism</option>
+            <option value="turbo">Turbo</option>
+          </select>
+        </div>
+        <div>
+          <label>間隔秒數（避免限制）</label>
+          <input type="number" id="delay" value="12" min="5" max="60" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="startBtn" onclick="startBatch()">
+        開始批量生成
+      </button>
+      <button class="btn btn-secondary" id="stopBtn" style="width:100%;margin-top:8px;display:none" onclick="stopBatch()">
+        停止
+      </button>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text">
+          <span id="progressLabel">0 / 0</span>
+          <span id="progressPercent">0%</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="gallery-header">
+        <div class="stats">
+          已完成 <span id="doneCount">0</span> /
+          失敗 <span id="failCount">0</span> /
+          總計 <span id="totalCount">0</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="downloadAll()" id="downloadAllBtn" disabled>下載全部</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearGallery()">清空</button>
+        </div>
+      </div>
+      <div class="gallery" id="gallery">
+        <div class="empty" id="emptyState">輸入 prompt 後點擊「開始批量生成」</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let queue = [];
+    let running = false;
+    let stopFlag = false;
+    let results = [];
+
+    function getPrompts() {
+      return document.getElementById('prompts').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+
+    function updateStats() {
+      const done = results.filter(r => r.status === 'done').length;
+      const fail = results.filter(r => r.status === 'error').length;
+      document.getElementById('doneCount').textContent = done;
+      document.getElementById('failCount').textContent = fail;
+      document.getElementById('totalCount').textContent = results.length;
+      document.getElementById('downloadAllBtn').disabled = done === 0;
+    }
+
+    function renderCard(item, index) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.id = 'card-' + index;
+      div.innerHTML = `
+        <div class="status ${item.status}">${item.status === 'pending' ? '等待' : item.status === 'loading' ? '生成中' : item.status === 'done' ? '完成' : '失敗'}</div>
+        ${item.url ? `<img src="${item.url}" alt="generated" loading="lazy" />` : `<div style="aspect-ratio:1;background:#111;display:flex;align-items:center;justify-content:center;color:#555">等待中...</div>`}
+        <div class="meta">
+          <div class="prompt">${escapeHtml(item.prompt)}</div>
+          <div class="actions">
+            ${item.url ? `<button class="btn btn-secondary btn-sm" onclick="downloadOne(${index})">下載</button>` : ''}
+            ${item.status === 'error' ? `<button class="btn btn-secondary btn-sm" onclick="retryOne(${index})">重試</button>` : ''}
+          </div>
+        </div>
+      `;
+      return div;
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function refreshGallery() {
+      const gallery = document.getElementById('gallery');
+      const empty = document.getElementById('emptyState');
+      if (results.length === 0) {
+        gallery.innerHTML = '';
+        gallery.appendChild(empty);
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      gallery.innerHTML = '';
+      results.forEach((item, i) => {
+        gallery.appendChild(renderCard(item, i));
+      });
+      updateStats();
+    }
+
+    function buildUrl(prompt, width, height, model) {
+      const encoded = encodeURIComponent(prompt);
+      const seed = Math.floor(Math.random() * 999999);
+      return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=${model}&nologo=true&seed=${seed}&enhance=true`;
+    }
+
+    async function generateOne(item, index) {
+      item.status = 'loading';
+      refreshGallery();
+      const width = document.getElementById('width').value;
+      const height = document.getElementById('height').value;
+      const model = document.getElementById('model').value;
+      const url = buildUrl(item.prompt, width, height, model);
+
+      try {
+        // Prefetch to trigger generation
+        const resp = await fetch(url, { mode: 'cors' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        item.url = url;
+        item.status = 'done';
+      } catch (e) {
+        item.status = 'error';
+        item.error = e.message;
+      }
+      refreshGallery();
+    }
+
+    async function startBatch() {
+      if (running) return;
+      const prompts = getPrompts();
+      if (prompts.length === 0) {
+        alert('請先輸入至少一個 prompt');
+        return;
+      }
+
+      results = prompts.map(p => ({ prompt: p, status: 'pending', url: null }));
+      refreshGallery();
+
+      running = true;
+      stopFlag = false;
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('stopBtn').style.display = 'block';
+      document.getElementById('progressWrap').classList.add('active');
+
+      const delaySec = parseInt(document.getElementById('delay').value) || 12;
+
+      for (let i = 0; i < results.length; i++) {
+        if (stopFlag) break;
+        await generateOne(results[i], i);
+
+        const done = i + 1;
+        const pct = Math.round((done / results.length) * 100);
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressLabel').textContent = `${done} / ${results.length}`;
+        document.getElementById('progressPercent').textContent = pct + '%';
+
+        if (i < results.length - 1 && !stopFlag) {
+          await sleep(delaySec * 1000);
+        }
+      }
+
+      running = false;
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').style.display = 'none';
+    }
+
+    function stopBatch() {
+      stopFlag = true;
+    }
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function downloadOne(index) {
+      const item = results[index];
+      if (!item || !item.url) return;
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.download = `image-${index + 1}.jpg`;
+      a.target = '_blank';
+      a.click();
+    }
+
+    function downloadAll() {
+      results.forEach((item, i) => {
+        if (item.status === 'done' && item.url) {
+          setTimeout(() => downloadOne(i), i * 300);
+        }
+      });
+    }
+
+    function clearGallery() {
+      if (running) {
+        alert('請先停止生成');
+        return;
+      }
+      results = [];
+      refreshGallery();
+      document.getElementById('progressWrap').classList.remove('active');
+      document.getElementById('progressFill').style.width = '0%';
+    }
+
+    function retryOne(index) {
+      if (running) return;
+      generateOne(results[index], index);
+    }
+  </script>
+</body>
+</html>
